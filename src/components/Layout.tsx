@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X, FolderKanban, FileCheck2 } from "lucide-react";
+import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X, FolderKanban, FileCheck2, FileText, Wallet } from "lucide-react";
 import { can, useAuth } from "../lib/auth";
 import { ROLE_LABEL } from "../lib/types";
 import { Avatar, cx } from "./ui";
@@ -13,14 +13,18 @@ export function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const nav = useNavigate();
 
-  const main = [
+  const main: { to: string; label: string; icon: typeof Home; end?: boolean }[] = [
     { to: "/", label: "Today", icon: Home, end: true },
     { to: "/leads", label: "Leads", icon: Users },
     { to: "/projects", label: "Projects", icon: FolderKanban },
     { to: "/followups", label: "Follow-ups", icon: CalendarClock },
+    { to: "/quotes", label: "Quotations", icon: FileText },
+    ...(p.assignLeads ? [{ to: "/money", label: "Money", icon: Wallet }] : []),
   ];
   const more = [
     { to: "/followups", label: "Follow-ups", icon: CalendarClock, mobileOnly: true },
+    p.assignLeads && { to: "/money", label: "Money", icon: Wallet, mobileOnly: true },
+    { to: "/quotes", label: "Quotations", icon: FileText, mobileOnly: true },
     p.assignLeads && { to: "/documents", label: "Documents to check", icon: FileCheck2 },
     p.managePartners && { to: "/partners", label: "Referral partners", icon: Handshake },
     p.importLeads && { to: "/import", label: "Import from Excel", icon: Upload },

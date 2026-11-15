@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Handshake, Plus, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useCommissions } from "../lib/money";
 import { usePartners, useProfiles, useStages } from "../lib/queries";
 import { fmtPhone, normaliseMobile, rupees, telLink } from "../lib/format";
 import type { Partner } from "../lib/types";
@@ -17,6 +19,11 @@ export default function Partners() {
   const { data: stages } = useStages();
   const { data: profiles } = useProfiles();
   const [editing, setEditing] = useState<Partner | "new" | null>(null);
+  const { data: commissions } = useCommissions();
+  const money = commissions?.reduce<Record<string, { earned: number; paid: number; pending: number }>>((m, c) => {
+    m[c.partner_id] ??= { earned: 0, paid: 0, pending: 0 };
+    m[c.partner_id].earned += Number(c.amount); m[c.partner_id].paid += Number(c.paid); m[c.partner_id].pending += Number(c.pending); return m;
+  }, {});
   const { data: counts } = useQuery({
     queryKey: ["leads", "partner-counts"],
     queryFn: async () => {
@@ -56,6 +63,9 @@ export default function Partners() {
                   <div className="rounded-xl bg-success-tint py-2"><p className="text-lg font-bold text-success">{c?.won ?? 0}</p><p className="text-xs text-muted">Won</p></div>
                 </div>
                 <p className="mt-3 text-sm text-body">Commission: <b className="text-ink">{commissionText(p)}</b></p>
+                {money?.[p.id] && (
+                  <p className="mt-1 text-sm text-body">Earned <b className="text-ink">{rupees(money[p.id].earned)}</b> · paid <b className="text-success">{rupees(money[p.id].paid)}</b>{money[p.id].pending > 0 && <> · <Link to="/money?tab=commissions" className="font-semibold text-orange-dark">{rupees(money[p.id].pending)} to pay</Link></>}</p>
+                )}
                 <div className="mt-3 flex items-center justify-between">
                   <span className={cx("chip", hasLogin ? "bg-success-tint text-success" : "bg-cloud text-muted")}>{hasLogin ? "Has login" : "No login yet"}</span>
                   <Button size="sm" variant="secondary" onClick={() => setEditing(p)}>Edit</Button>
