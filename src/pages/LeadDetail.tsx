@@ -17,6 +17,7 @@ import { LostReasonSheet } from "../components/LostReasonSheet";
 import { EditLeadSheet } from "../components/EditLeadSheet";
 import { LogCallSheet } from "../components/LogCallSheet";
 import { ConvertLeadSheet } from "../components/ConvertLeadSheet";
+import { QuotesCard } from "../components/QuotesCard";
 import type { SiteSurvey } from "../lib/projects";
 
 export default function LeadDetail() {
@@ -170,6 +171,8 @@ export default function LeadDetail() {
               <span className="text-muted">→</span>
             </Link>
           </div>
+
+          {!stage?.is_lost && <QuotesCard leadId={lead.id} suggestedKw={survey?.recommended_kw} projectId={project?.id} />}
 
           {/* Next follow-up */}
           <div className="card p-4">

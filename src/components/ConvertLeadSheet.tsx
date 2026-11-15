@@ -6,20 +6,26 @@ import { estimateFromBill } from "../lib/estimate";
 import { useEstimateSettings } from "../lib/queries";
 import { SYSTEM_TYPES } from "../lib/projects";
 import { rupees } from "../lib/format";
+import { quoteLabel, useQuotesForLead } from "../lib/quotes";
 import type { Lead } from "../lib/types";
 import { Button, Field, Segmented, Sheet, friendlyError, useToast } from "./ui";
 
 /** One step: the lead becomes a customer and a project is opened with every detail carried over. */
 export function ConvertLeadSheet({ open, onClose, lead, surveyKw }: { open: boolean; onClose: () => void; lead: Lead; surveyKw?: number | null }) {
   const { data: est } = useEstimateSettings();
-  const suggestion = surveyKw ?? (lead.monthly_bill && est ? estimateFromBill(lead.monthly_bill, est, lead.customer_type).kw : null);
+  const { data: quotes } = useQuotesForLead(open ? lead.id : null);
+  // the accepted quotation wins, else the latest sent one
+  const quote = quotes?.find((q) => q.status === "Accepted") ?? quotes?.find((q) => q.status === "Sent");
+  const suggestion = (quote ? Number(quote.capacity_kw) : null) ?? surveyKw ?? (lead.monthly_bill && est ? estimateFromBill(lead.monthly_bill, est, lead.customer_type).kw : null);
   const [f, setF] = useState({ capacity: "", system: "On-grid", cost: "", finance: "Cash" as "Cash" | "Bank loan", father: "", consumer: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const nav = useNavigate(); const qc = useQueryClient(); const toast = useToast();
   useEffect(() => {
-    if (open) setF((x) => ({ ...x, capacity: x.capacity || (suggestion ? String(suggestion) : ""), cost: x.cost || (lead.deal_value ? String(lead.deal_value) : "") }));
-  }, [open, suggestion, lead.deal_value]);
+    if (open) setF((x) => ({ ...x, capacity: x.capacity || (suggestion ? String(suggestion) : ""), system: quote?.system_type ?? x.system,
+      finance: quote?.include_loan ? "Bank loan" : x.finance,
+      cost: x.cost || (quote ? String(Number(quote.total)) : lead.deal_value ? String(lead.deal_value) : "") }));
+  }, [open, suggestion, lead.deal_value, quote]);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
   async function go() {
@@ -35,7 +41,9 @@ export function ConvertLeadSheet({ open, onClose, lead, surveyKw }: { open: bool
     });
     setBusy(false);
     if (error) { toast(friendlyError(error), "error"); return; }
-    ["lead", "leads", "activities", "projects", "lead_project"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    // link this lead's quotations to the new project
+    await supabase.from("quotations").update({ project_id: data }).eq("lead_id", lead.id).is("project_id", null);
+    ["quotes", "lead", "leads", "activities", "projects", "lead_project"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
     toast("Customer and project created");
     onClose();
     nav(`/projects/${data}`);
@@ -51,7 +59,7 @@ export function ConvertLeadSheet({ open, onClose, lead, surveyKw }: { open: bool
         <Field label="System size (kW)" error={errors.capacity} hint={suggestion ? `Suggested: ${suggestion} kW` : undefined}>
           <input className="input" inputMode="decimal" value={f.capacity} onChange={set("capacity")} />
         </Field>
-        <Field label="Total project cost (₹)" error={errors.cost} hint={f.cost ? rupees(Number(f.cost)) : "Can be added later"}>
+        <Field label="Total project cost (₹)" error={errors.cost} hint={quote && f.cost === String(Number(quote.total)) ? `From quotation ${quoteLabel(quote)}` : f.cost ? rupees(Number(f.cost)) : "Can be added later"}>
           <input className="input" inputMode="numeric" value={f.cost} onChange={set("cost")} />
         </Field>
       </div>

@@ -12,6 +12,9 @@ import Projects from "./pages/Projects";
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const SiteSurvey = lazy(() => import("./pages/SiteSurvey"));
 const PendingDocuments = lazy(() => import("./pages/PendingDocuments"));
+const Quotes = lazy(() => import("./pages/Quotes"));
+const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
+const Money = lazy(() => import("./pages/Money"));
 
 const Partners = lazy(() => import("./pages/Partners"));
 const Users = lazy(() => import("./pages/Users"));
@@ -50,6 +53,9 @@ export default function App() {
               <Route path="followups" element={<Followups />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:id" element={<ProjectDetail />} />
+              <Route path="quotes" element={<Quotes />} />
+              <Route path="quotes/:id" element={<QuoteDetail />} />
+              {p.assignLeads && <Route path="money" element={<Money />} />}
               {p.assignLeads && <Route path="documents" element={<PendingDocuments />} />}
               {p.managePartners && <Route path="partners" element={<Partners />} />}
               {p.importLeads && <Route path="import" element={<Import />} />}

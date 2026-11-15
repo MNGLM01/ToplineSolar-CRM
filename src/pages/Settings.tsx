@@ -5,17 +5,18 @@ import { supabase } from "../lib/supabase";
 import { useEstimateSettings, useLostReasons, useSources, useStages } from "../lib/queries";
 import { useChecklistTemplate, useDocTypes } from "../lib/projects";
 import type { EstimateSettings } from "../lib/types";
+import { CompanyEditor, ExpenseCategoriesEditor, PriceListEditor } from "../components/settings/MoneySettings";
 import { Button, Field, PageHeader, cx, friendlyError, useToast } from "../components/ui";
 
-type Tab = "stages" | "sources" | "lost" | "checklists" | "documents" | "estimate";
+type Tab = "stages" | "sources" | "lost" | "checklists" | "documents" | "estimate" | "prices" | "company" | "expenses";
 
 export default function Settings() {
-  const [tab, setTab] = useState<Tab>("stages");
+  const [tab, setTab] = useState<Tab>("prices");
   return (
     <div>
       <PageHeader title="Settings" subtitle="Lists and rates used across the CRM. Changes are recorded in the history." />
       <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-ink/5 p-1">
-        {([["stages", "Lead stages"], ["sources", "Lead sources"], ["lost", "Lost reasons"], ["checklists", "Checklists"], ["documents", "Document types"], ["estimate", "Solar estimate"]] as [Tab, string][]).map(([k, l]) => (
+        {([["prices", "Price list"], ["company", "Company & bank"], ["stages", "Lead stages"], ["sources", "Lead sources"], ["lost", "Lost reasons"], ["checklists", "Checklists"], ["documents", "Document types"], ["estimate", "Solar estimate"], ["expenses", "Expense types"]] as [Tab, string][]).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={cx("h-9 flex-1 whitespace-nowrap rounded-lg px-3 text-sm font-semibold", tab === k ? "bg-white text-ink shadow-sm" : "text-muted")}>{l}</button>
         ))}
       </div>
@@ -25,6 +26,9 @@ export default function Settings() {
       {tab === "checklists" && <ChecklistEditor />}
       {tab === "documents" && <DocTypesEditor />}
       {tab === "estimate" && <EstimateEditor />}
+      {tab === "prices" && <PriceListEditor />}
+      {tab === "company" && <CompanyEditor />}
+      {tab === "expenses" && <ExpenseCategoriesEditor />}
     </div>
   );
 }
@@ -109,7 +113,7 @@ function EstimateEditor() {
   }
   return (
     <div className="card p-4">
-      <p className="mb-4 text-sm text-muted">Used for the quick estimate on each lead's page. Quotations (step 3) will use your full price list.</p>
+      <p className="mb-4 text-sm text-muted">Used for the quick estimate on each lead's page. Quotations use your price list instead; these rates also set the savings and payback shown on proposals.</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Electricity tariff (₹ per unit)"><input className="input" inputMode="decimal" value={f.tariff_per_unit} onChange={set("tariff_per_unit")} /></Field>
         <Field label="Units per kW per month"><input className="input" inputMode="numeric" value={f.units_per_kw_month} onChange={set("units_per_kw_month")} /></Field>
