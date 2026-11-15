@@ -24,11 +24,12 @@ const Import = lazy(() => import("./pages/Import"));
 const PartnerHome = lazy(() => import("./pages/PartnerHome"));
 
 export default function App() {
-  const { session, profile, loading, signOut } = useAuth();
+  const { session, profile, loading, profileChecked, signOut } = useAuth();
   if (loading) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
   if (!session) return <Login />;
-  if (!profile) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
-  if (!profile.active)
+  if (!profile && !profileChecked) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
+  // an inactive or half-created account can't read its own profile: say so instead of loading forever
+  if (!profile || !profile.active)
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
         <img src="/brand/topline-solar-logo-horizontal.svg" alt="Topline Solar" className="h-10" />
