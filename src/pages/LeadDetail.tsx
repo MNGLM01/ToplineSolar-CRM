@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Phone, MessageCircle, MapPin, CalendarPlus, PhoneCall, Pencil, Trash2, Sun, CheckCircle2, StickyNote, ArrowRightLeft, UserCheck, Clock, Send } from "lucide-react";
+import { ArrowLeft, Phone, MessageCircle, MapPin, CalendarPlus, PhoneCall, Pencil, Trash2, Sun, CheckCircle2, StickyNote, ArrowRightLeft, UserCheck, Clock, Send, ClipboardList, FolderKanban, UserPlus } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { can, useAuth } from "../lib/auth";
 import { useLead } from "../lib/leads";
@@ -16,6 +16,8 @@ import { CompleteFollowupSheet } from "../components/CompleteFollowupSheet";
 import { LostReasonSheet } from "../components/LostReasonSheet";
 import { EditLeadSheet } from "../components/EditLeadSheet";
 import { LogCallSheet } from "../components/LogCallSheet";
+import { ConvertLeadSheet } from "../components/ConvertLeadSheet";
+import type { SiteSurvey } from "../lib/projects";
 
 export default function LeadDetail() {
   const { id } = useParams();
@@ -31,7 +33,7 @@ export default function LeadDetail() {
   const { data: partners } = usePartners(p.managePartners || profile?.role === "sales");
   const { data: reasons } = useLostReasons();
   const { data: est } = useEstimateSettings();
-  const [sheet, setSheet] = useState<"" | "followup" | "edit" | "lost" | "call">("");
+  const [sheet, setSheet] = useState<"" | "followup" | "edit" | "lost" | "call" | "convert">("");
   const [completing, setCompleting] = useState<Followup | null>(null);
   const [note, setNote] = useState("");
 
@@ -42,6 +44,15 @@ export default function LeadDetail() {
   const { data: followups } = useQuery({
     queryKey: ["followups", "lead", id], enabled: !!id,
     queryFn: async () => (await supabase.from("followups").select("*").eq("lead_id", id!).eq("status", "pending").order("due_at")).data as Followup[],
+  });
+
+  const { data: project } = useQuery({
+    queryKey: ["lead_project", id], enabled: !!id,
+    queryFn: async () => (await supabase.from("projects").select("id, project_no, status_id").eq("lead_id", id!).is("deleted_at", null).maybeSingle()).data as { id: string; project_no: string } | null,
+  });
+  const { data: survey } = useQuery({
+    queryKey: ["survey", id], enabled: !!id,
+    queryFn: async () => (await supabase.from("site_surveys").select("*").eq("lead_id", id!).maybeSingle()).data as SiteSurvey | null,
   });
 
   const stage = stages?.find((s) => s.id === lead?.stage_id);
@@ -55,7 +66,10 @@ export default function LeadDetail() {
   }
   async function changeStage(sid: number) {
     if (stages?.find((s) => s.id === sid)?.is_lost) { setSheet("lost"); return; }
-    try { await moveStage(id!, sid); toast("Stage updated"); refresh(); } catch (e) { toast(friendlyError(e), "error"); }
+    try {
+      await moveStage(id!, sid); toast("Stage updated"); refresh();
+      if (stages?.find((s) => s.id === sid)?.is_won && !project) setSheet("convert");
+    } catch (e) { toast(friendlyError(e), "error"); }
   }
   async function addNote() {
     if (!note.trim()) return;
@@ -136,6 +150,27 @@ export default function LeadDetail() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-1">
+          {/* Survey and conversion */}
+          <div className="card p-4">
+            {project ? (
+              <Link to={`/projects/${project.id}`} className="flex items-center gap-3 rounded-xl bg-success-tint p-3">
+                <FolderKanban className="h-5 w-5 text-success" />
+                <span className="flex-1"><span className="block text-sm font-semibold text-ink">Customer · project {project.project_no}</span><span className="block text-xs text-muted">Open the project</span></span>
+                <span className="text-success">→</span>
+              </Link>
+            ) : !stage?.is_lost && (
+              <Button className="w-full" variant={stage?.is_won ? "primary" : "secondary"} onClick={() => setSheet("convert")}><UserPlus className="h-4 w-4" />Convert to customer</Button>
+            )}
+            <Link to={`/leads/${lead.id}/survey`} className="mt-3 flex items-center gap-3 rounded-xl border border-rule p-3 hover:bg-cloud">
+              <ClipboardList className="h-5 w-5 text-blue" />
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-ink">{survey ? "Site survey done" : "Do site survey"}</span>
+                <span className="block text-xs text-muted">{survey ? `${fmtDate(survey.surveyed_at)}${survey.recommended_kw ? ` · ${survey.recommended_kw} kW recommended` : ""}` : "Roof, meter, GPS and photos, on your phone"}</span>
+              </span>
+              <span className="text-muted">→</span>
+            </Link>
+          </div>
+
           {/* Next follow-up */}
           <div className="card p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -217,6 +252,7 @@ export default function LeadDetail() {
       <LostReasonSheet open={sheet === "lost"} onClose={() => setSheet("")}
         onConfirm={async (reasonId, n) => { setSheet(""); const lost = stages?.find((s) => s.is_lost); if (!lost) return; try { await moveStage(lead.id, lost.id, { reasonId, note: n }); toast("Marked as lost"); refresh(); } catch (e) { toast(friendlyError(e), "error"); } }} />
       <EditLeadSheet open={sheet === "edit"} onClose={() => setSheet("")} lead={lead} />
+      <ConvertLeadSheet open={sheet === "convert"} onClose={() => setSheet("")} lead={lead} surveyKw={survey?.recommended_kw} />
       <LogCallSheet open={sheet === "call"} onClose={() => setSheet("")} leadId={lead.id} onScheduleNext={() => setSheet("followup")} />
     </div>
   );

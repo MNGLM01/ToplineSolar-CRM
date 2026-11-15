@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X } from "lucide-react";
+import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X, FolderKanban, FileCheck2 } from "lucide-react";
 import { can, useAuth } from "../lib/auth";
 import { ROLE_LABEL } from "../lib/types";
 import { Avatar, cx } from "./ui";
@@ -16,15 +16,18 @@ export function Layout() {
   const main = [
     { to: "/", label: "Today", icon: Home, end: true },
     { to: "/leads", label: "Leads", icon: Users },
+    { to: "/projects", label: "Projects", icon: FolderKanban },
     { to: "/followups", label: "Follow-ups", icon: CalendarClock },
   ];
   const more = [
+    { to: "/followups", label: "Follow-ups", icon: CalendarClock, mobileOnly: true },
+    p.assignLeads && { to: "/documents", label: "Documents to check", icon: FileCheck2 },
     p.managePartners && { to: "/partners", label: "Referral partners", icon: Handshake },
     p.importLeads && { to: "/import", label: "Import from Excel", icon: Upload },
     p.manageUsers && { to: "/users", label: "Users & roles", icon: UserCog },
     p.manageSettings && { to: "/settings", label: "Settings", icon: Settings },
     p.deleteRecords && { to: "/trash", label: "Trash", icon: Trash2 },
-  ].filter(Boolean) as { to: string; label: string; icon: typeof Home }[];
+  ].filter(Boolean) as { to: string; label: string; icon: typeof Home; mobileOnly?: boolean }[];
 
   const link = ({ isActive }: { isActive: boolean }) =>
     cx("flex items-center gap-3 rounded-xl px-3 h-11 text-[15px] font-medium transition",
@@ -40,8 +43,8 @@ export function Layout() {
         </button>
         <nav className="flex flex-col gap-1">
           {main.map((i) => <NavLink key={i.to} to={i.to} end={i.end} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
-          {more.length > 0 && <div className="mx-3 my-3 h-px bg-white/10" />}
-          {more.map((i) => <NavLink key={i.to} to={i.to} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
+          {more.some((i) => !i.mobileOnly) && <div className="mx-3 my-3 h-px bg-white/10" />}
+          {more.filter((i) => !i.mobileOnly).map((i) => <NavLink key={i.to} to={i.to} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
         </nav>
         <div className="mt-auto flex items-center gap-3 rounded-xl px-2 py-2">
           {profile && <Avatar name={profile.full_name} size={34} />}

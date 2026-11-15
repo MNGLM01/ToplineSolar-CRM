@@ -8,6 +8,10 @@ import Today from "./pages/Today";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Followups from "./pages/Followups";
+import Projects from "./pages/Projects";
+const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const SiteSurvey = lazy(() => import("./pages/SiteSurvey"));
+const PendingDocuments = lazy(() => import("./pages/PendingDocuments"));
 
 const Partners = lazy(() => import("./pages/Partners"));
 const Users = lazy(() => import("./pages/Users"));
@@ -42,7 +46,11 @@ export default function App() {
               <Route index element={<Today />} />
               <Route path="leads" element={<Leads />} />
               <Route path="leads/:id" element={<LeadDetail />} />
+              <Route path="leads/:id/survey" element={<SiteSurvey />} />
               <Route path="followups" element={<Followups />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="projects/:id" element={<ProjectDetail />} />
+              {p.assignLeads && <Route path="documents" element={<PendingDocuments />} />}
               {p.managePartners && <Route path="partners" element={<Partners />} />}
               {p.importLeads && <Route path="import" element={<Import />} />}
               {p.manageUsers && <Route path="users" element={<Users />} />}
