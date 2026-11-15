@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CalendarClock, Inbox, Trophy, Plus, ChevronRight } from "lucide-react";
+import { AlertCircle, CalendarClock, Inbox, Trophy, Plus, ChevronRight, FolderKanban, FileCheck2, FileX2, Timer } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { can, useAuth } from "../lib/auth";
 import { useFollowupCounts, useFollowups } from "../lib/followups";
@@ -40,6 +40,21 @@ export default function Today() {
     enabled: !!stages,
   });
 
+  const { data: proj } = useQuery({
+    queryKey: ["projects", "today-stats", profile?.id],
+    queryFn: async () => {
+      const { data: st } = await supabase.from("project_statuses").select("id, name, is_completed, is_cancelled");
+      const active = (st ?? []).filter((s) => !s.is_completed && !s.is_cancelled && s.name !== "On Hold").map((s) => s.id);
+      const head = (t: string) => supabase.from(t).select("id", { count: "exact", head: true });
+      const [open, stuck, docs] = await Promise.all([
+        head("projects").is("deleted_at", null).in("status_id", active),
+        head("projects").is("deleted_at", null).in("status_id", active).lt("status_changed_at", new Date(Date.now() - 15 * 86_400_000).toISOString()),
+        head("documents").is("deleted_at", null).eq("status", p.assignLeads ? "pending" : "rejected"),
+      ]);
+      return { open: open.count ?? 0, stuck: stuck.count ?? 0, docs: docs.count ?? 0 };
+    },
+  });
+
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const maxStage = Math.max(1, ...Object.values(stats?.stageCounts ?? { 0: 1 }));
@@ -63,6 +78,14 @@ export default function Today() {
           ? <Tile to="/leads?assigned=none" icon={<Inbox className="h-5 w-5" />} label="New leads not assigned" value={stats?.unassigned} tone={stats?.unassigned ? "orange" : "muted"} />
           : <Tile to="/leads" icon={<Inbox className="h-5 w-5" />} label="My open leads" value={stats?.open} tone="orange" />}
         <Tile to="/leads" icon={<Trophy className="h-5 w-5" />} label="Won this month" value={stats?.wonMonth} tone="success" sub={`${stats?.newMonth ?? "–"} new leads this month`} />
+      </div>
+
+      <div className="-mt-3 mb-6 grid grid-cols-3 gap-3">
+        <MiniTile to="/projects" icon={<FolderKanban className="h-4 w-4" />} label="Projects in progress" value={proj?.open} />
+        <MiniTile to="/projects?stuck=15" icon={<Timer className="h-4 w-4" />} label="Stuck 15+ days" value={proj?.stuck} warn={!!proj?.stuck} />
+        {p.assignLeads
+          ? <MiniTile to="/documents" icon={<FileCheck2 className="h-4 w-4" />} label="Documents to check" value={proj?.docs} warn={!!proj?.docs} />
+          : <MiniTile to="/projects" icon={<FileX2 className="h-4 w-4" />} label="Documents rejected" value={proj?.docs} warn={!!proj?.docs} />}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -103,6 +126,18 @@ function Tile({ to, icon, label, value, tone, sub }: { to: string; icon: ReactNo
         <p className="text-2xl font-extrabold tabular-nums text-ink">{value ?? "–"}</p>
         <p className="text-sm text-muted">{label}</p>
         {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
+      </div>
+    </Link>
+  );
+}
+
+function MiniTile({ to, icon, label, value, warn }: { to: string; icon: ReactNode; label: string; value?: number; warn?: boolean }) {
+  return (
+    <Link to={to} className="card flex min-w-0 items-center gap-2.5 px-3 py-2.5 transition hover:shadow-pop">
+      <span className={cx("hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:flex", warn ? "bg-orange-tint text-orange-dark" : "bg-cloud text-navy")}>{icon}</span>
+      <div className="min-w-0">
+        <p className={cx("text-lg font-extrabold leading-tight tabular-nums", warn ? "text-orange-dark" : "text-ink")}>{value ?? "–"}</p>
+        <p className="truncate text-xs text-muted">{label}</p>
       </div>
     </Link>
   );

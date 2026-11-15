@@ -9,9 +9,11 @@ import { Button, Empty, PageLoader, cx } from "../components/ui";
 import { NewLeadSheet } from "../components/NewLeadSheet";
 import { commissionText } from "./Partners";
 
-interface Row { id: string; lead_no: string; name: string; village: string | null; district: string | null; monthly_bill: number | null; created_at: string; stage: string; is_won: boolean; is_lost: boolean }
+interface Row { id: string; lead_no: string; name: string; village: string | null; district: string | null; monthly_bill: number | null; created_at: string; stage: string; is_won: boolean; is_lost: boolean; project_status: string | null }
 
-const status = (r: Row) => r.is_won ? { t: "Installed / Won", c: "bg-success-tint text-success" } : r.is_lost ? { t: "Not going ahead", c: "bg-cloud text-muted" } : r.stage === "New" ? { t: "Received", c: "bg-blue-tint text-blue" } : { t: `In progress · ${r.stage}`, c: "bg-orange-tint text-orange-dark" };
+const status = (r: Row) => r.project_status === "Completed" ? { t: "Installed", c: "bg-success-tint text-success" }
+  : r.project_status && r.project_status !== "Cancelled" ? { t: `Customer · ${r.project_status}`, c: "bg-success-tint text-success" }
+  : r.is_won ? { t: "Won", c: "bg-success-tint text-success" } : r.is_lost ? { t: "Not going ahead", c: "bg-cloud text-muted" } : r.stage === "New" ? { t: "Received", c: "bg-blue-tint text-blue" } : { t: `In progress · ${r.stage}`, c: "bg-orange-tint text-orange-dark" };
 
 export default function PartnerHome() {
   const { profile, signOut } = useAuth();

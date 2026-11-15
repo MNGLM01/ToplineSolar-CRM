@@ -5,7 +5,7 @@ Web app for Topline Solar (rooftop solar EPC, Seemanchal, Bihar). Step 1: leads,
 - **Frontend:** React + Vite + Tailwind (brand tokens in `tailwind.config.js`), mobile-first.
 - **Backend:** Supabase (Postgres with row-level security, Auth, one Edge Function).
 - **Roles:** Owner, Office Manager, Sales Executive, Referral Partner. Access rules are enforced in the database (`supabase/migrations`), not just the UI.
-- **Data safety:** every insert/update/delete is written to `audit_log` with old and new values; leads are never hard-deleted (trash, owner-only restore); nightly backup workflow in `.github/workflows/nightly-backup.yml`.
+- **Data safety:** every insert/update/delete is written to `audit_log` with old and new values; leads are never hard-deleted (trash, owner-only restore); encrypted nightly backup workflow in `.github/workflows/nightly-backup.yml` (needs the `SUPABASE_DB_URL` and `BACKUP_PASSPHRASE` repository secrets; restore steps are in the file).
 
 ## Setup
 1. Create a Supabase project and run `supabase/migrations/*.sql` in order.
