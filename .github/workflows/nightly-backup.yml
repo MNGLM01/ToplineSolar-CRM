@@ -1,30 +1,50 @@
 # Nightly database backup for the Supabase free plan (which has no automatic backups).
-# Saves a full dump as a GitHub Actions artifact, kept for 30 days.
-# Needs one repository secret: SUPABASE_DB_URL (Supabase → Project Settings → Database → Connection string, "Session pooler" URI with password).
+# Saves an ENCRYPTED full dump as a GitHub Actions artifact, kept for 30 days.
+# Needs two repository secrets (GitHub → Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     Supabase → Project Settings → Database → Connection string, "Session pooler" URI with password
+#   BACKUP_PASSPHRASE   a long password you keep safe; needed to open a backup
+# The dump is encrypted because artifacts of a public repository can be downloaded by any GitHub user.
+# Restore: gpg -d topline-crm-DATE.dump.gpg > db.dump && pg_restore --no-owner -d "<target db url>" db.dump
 name: Nightly backup
 on:
   schedule:
     - cron: "30 20 * * *" # 02:00 IST every night
   workflow_dispatch: {}
+permissions:
+  contents: read
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
+      - name: Check secrets
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$PASS" ]; then
+            echo "::error::Backups are OFF. Add the SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets."
+            exit 1
+          fi
       - name: Install PostgreSQL 17 client
         run: |
           sudo install -d /usr/share/postgresql-common/pgdg
           sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
-      - name: Dump database
+      - name: Dump and encrypt database
         env:
           DB: ${{ secrets.SUPABASE_DB_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
+          set -euo pipefail
           STAMP=$(TZ=Asia/Kolkata date +%Y-%m-%d)
-          /usr/lib/postgresql/17/bin/pg_dump "$DB" --no-owner --no-privileges --schema=public --schema=auth -Fc -f "topline-crm-$STAMP.dump"
-          ls -lh topline-crm-*.dump
+          /usr/lib/postgresql/17/bin/pg_dump "$DB" --no-owner --no-privileges --schema=public --schema=auth -Fc -f db.dump
+          printf '%s' "$PASS" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 -o "topline-crm-$STAMP.dump.gpg" db.dump
+          rm -f db.dump
+          ls -lh topline-crm-*.dump.gpg
       - uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ github.run_id }}
-          path: topline-crm-*.dump
+          path: topline-crm-*.dump.gpg
           retention-days: 30
+          if-no-files-found: error
