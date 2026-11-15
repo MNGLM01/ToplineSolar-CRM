@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-cloud text-body font-sans antialiased; font-feature-settings: "cv11", "ss01"; }
+  h1, h2, h3 { @apply text-ink font-display; letter-spacing: -0.01em; }
+  input, select, textarea, button { font: inherit; }
+  :focus-visible { outline: 2px solid #2D6CDF; outline-offset: 2px; }
+}
+@layer components {
+  .input { @apply w-full h-11 rounded-xl border border-rule bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 transition focus:border-blue focus:ring-4 focus:ring-blue/10 outline-none; }
+  textarea.input { @apply h-auto py-2.5; }
+  .label { @apply block text-[13px] font-medium text-body mb-1.5; }
+  .card { @apply min-w-0 bg-white rounded-2xl border border-rule/70 shadow-card; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 h-6 text-xs font-medium whitespace-nowrap; }
+  .baseline { @apply block h-1 w-10 rounded-full bg-orange; }
+}
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }

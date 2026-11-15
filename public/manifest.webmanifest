@@ -1,0 +1,9 @@
+{
+  "name": "Topline Solar CRM",
+  "short_name": "Topline CRM",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F6FA",
+  "theme_color": "#0A1F3C",
+  "icons": [{ "src": "/brand/topline-solar-app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }]
+}
