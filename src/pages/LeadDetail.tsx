@@ -18,6 +18,7 @@ import { EditLeadSheet } from "../components/EditLeadSheet";
 import { LogCallSheet } from "../components/LogCallSheet";
 import { ConvertLeadSheet } from "../components/ConvertLeadSheet";
 import { QuotesCard } from "../components/QuotesCard";
+import { TasksCard } from "../components/tasks/TaskList";
 import type { SiteSurvey } from "../lib/projects";
 
 export default function LeadDetail() {
@@ -189,6 +190,8 @@ export default function LeadDetail() {
             ) : <p className="text-sm text-muted">No follow-up scheduled. Every open lead should have one.</p>}
             {followups && followups.length > 1 && <p className="mt-2 text-xs text-muted">+{followups.length - 1} more scheduled</p>}
           </div>
+
+          <TasksCard preset={{ leadId: lead.id, leadName: lead.name }} />
 
           {/* Estimate */}
           {estimate && (

@@ -15,6 +15,9 @@ const PendingDocuments = lazy(() => import("./pages/PendingDocuments"));
 const Quotes = lazy(() => import("./pages/Quotes"));
 const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
 const Money = lazy(() => import("./pages/Money"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 
 const Partners = lazy(() => import("./pages/Partners"));
 const Users = lazy(() => import("./pages/Users"));
@@ -56,6 +59,9 @@ export default function App() {
               <Route path="projects/:id" element={<ProjectDetail />} />
               <Route path="quotes" element={<Quotes />} />
               <Route path="quotes/:id" element={<QuoteDetail />} />
+              <Route path="tasks" element={<Tasks />} />
+              {p.assignLeads && <Route path="dashboard" element={<Dashboard />} />}
+              {p.assignLeads && <Route path="reports" element={<Reports />} />}
               {p.assignLeads && <Route path="money" element={<Money />} />}
               {p.assignLeads && <Route path="documents" element={<PendingDocuments />} />}
               {p.managePartners && <Route path="partners" element={<Partners />} />}

@@ -1,13 +1,16 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CalendarClock, Inbox, Trophy, Plus, ChevronRight, FolderKanban, FileCheck2, FileX2, Timer } from "lucide-react";
+import { AlertCircle, CalendarClock, Inbox, Trophy, Plus, ChevronRight, FolderKanban, FileCheck2, FileX2, Timer, LayoutDashboard } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { can, useAuth } from "../lib/auth";
 import { useFollowupCounts, useFollowups } from "../lib/followups";
 import { useStages } from "../lib/queries";
 import { Button, PageLoader, cx } from "../components/ui";
 import { FollowupList } from "../components/FollowupList";
+import { TaskList } from "../components/tasks/TaskList";
+import { TaskSheet } from "../components/tasks/TaskSheet";
+import { dueBucket, useTasks, type TaskRow } from "../lib/tasks";
 
 export default function Today() {
   const { profile } = useAuth();
@@ -18,6 +21,9 @@ export default function Today() {
   const { data: overdue } = useFollowups("overdue", mine);
   const { data: today, isLoading } = useFollowups("today", mine);
   const { data: stages } = useStages();
+  const { data: tasks } = useTasks("mine", profile?.id);
+  const [taskSheet, setTaskSheet] = useState<{ edit?: TaskRow } | null>(null);
+  const dueTasks = (tasks ?? []).filter((t) => dueBucket(t) !== "upcoming");
 
   const { data: stats } = useQuery({
     queryKey: ["leads", "today-stats", profile?.id],
@@ -68,7 +74,10 @@ export default function Today() {
           <h1 className="text-2xl font-extrabold">{greet}, {profile?.full_name.split(" ")[0]}</h1>
           <span className="baseline mt-2" />
         </div>
-        <Button onClick={openNewLead} className="hidden sm:inline-flex"><Plus className="h-4 w-4" />New lead</Button>
+        <div className="flex gap-2">
+          {p.assignLeads && <Link to="/dashboard" className="inline-flex h-11 items-center gap-2 rounded-xl border border-rule bg-white px-4 text-[15px] font-semibold text-ink hover:bg-cloud"><LayoutDashboard className="h-4 w-4" /><span className="hidden sm:inline">Dashboard</span></Link>}
+          <Button onClick={openNewLead} className="hidden sm:inline-flex"><Plus className="h-4 w-4" />New lead</Button>
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -88,13 +97,23 @@ export default function Today() {
           : <MiniTile to="/projects" icon={<FileX2 className="h-4 w-4" />} label="Documents rejected" value={proj?.docs} warn={!!proj?.docs} />}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
         <div className="card px-4 pt-4 lg:col-span-2">
           <h2 className="text-lg font-bold">Your calls and visits today</h2>
           <p className="text-sm text-muted">Overdue first, then today's. Tap a name to open the lead.</p>
           {isLoading ? <PageLoader /> : <FollowupList rows={[...(overdue ?? []), ...(today ?? [])]} showOwner={p.seeAllLeads} emptyText="You're all caught up. Add a lead or schedule follow-ups from a lead's page." />}
         </div>
 
+        <div className="space-y-4">
+        <div className="card p-4">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Your tasks</h2>
+            <button onClick={() => setTaskSheet({})} className="flex items-center gap-1 text-sm font-semibold text-blue"><Plus className="h-4 w-4" />Add</button>
+          </div>
+          {tasks && dueTasks.length === 0 && <p className="py-2 text-sm text-muted">{tasks.length ? `Nothing due today. ${tasks.length} coming up.` : "No tasks. Add one for anything you mustn't forget."}</p>}
+          <TaskList rows={dueTasks.slice(0, 6)} onOpen={(t) => setTaskSheet({ edit: t })} />
+          {tasks && tasks.length > 0 && <Link to="/tasks" className="mt-2 flex items-center gap-1 text-sm font-semibold text-blue">All tasks <ChevronRight className="h-4 w-4" /></Link>}
+        </div>
         <div className="card p-4">
           <h2 className="mb-3 text-lg font-bold">Leads by stage</h2>
           <ul className="space-y-2.5">
@@ -112,7 +131,9 @@ export default function Today() {
           </ul>
           <Link to="/leads?view=board" className="mt-4 flex items-center gap-1 text-sm font-semibold text-blue">Open board <ChevronRight className="h-4 w-4" /></Link>
         </div>
+        </div>
       </div>
+      <TaskSheet open={!!taskSheet} onClose={() => setTaskSheet(null)} edit={taskSheet?.edit} />
     </div>
   );
 }

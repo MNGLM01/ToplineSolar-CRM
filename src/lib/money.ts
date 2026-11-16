@@ -62,6 +62,7 @@ export function periodRange(p: string): [string, string] {
   const d = new Date(); const y = d.getFullYear(), m = d.getMonth();
   const iso = (x: Date) => { x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
   if (p === "last_month") return [iso(new Date(y, m - 1, 1)), iso(new Date(y, m, 0))];
+  if (p === "3m") return [iso(new Date(y, m - 2, 1)), iso(new Date(y, m + 1, 0))]; // this month and the two before
   if (p === "fy") { const fy = m >= 3 ? y : y - 1; return [`${fy}-04-01`, `${fy + 1}-03-31`]; } // Indian financial year, April to March
   if (p === "all") return ["2000-01-01", "2100-12-31"];
   return [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))];

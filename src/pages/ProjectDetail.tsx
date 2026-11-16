@@ -15,6 +15,7 @@ import { SubsidyLoanPanel } from "../components/project/SubsidyLoanPanel";
 import { HistoryPanel } from "../components/project/HistoryPanel";
 import { PaymentsPanel } from "../components/project/PaymentsPanel";
 import { QuotesCard } from "../components/QuotesCard";
+import { TasksCard } from "../components/tasks/TaskList";
 import { EditCustomerSheet, EditProjectSheet } from "../components/project/EditProjectSheet";
 
 type Tab = "overview" | "payments" | "checklist" | "documents" | "subsidy" | "history";
@@ -117,6 +118,7 @@ export default function ProjectDetail() {
         <div className="grid gap-4 lg:grid-cols-5">
           <div className="lg:col-span-3"><MilestoneTracker projectId={pr.id} locked={locked} /></div>
           <div className="space-y-4 lg:col-span-2">
+            <TasksCard preset={{ project: { id: pr.id, project_no: pr.project_no, customer_name: c.name } }} />
             {pr.lead_id && <QuotesCard leadId={pr.lead_id} />}
             <InfoCard title="System details" onEdit={locked ? undefined : () => setSheet("project")}>
               <Row k="Size" v={pr.capacity_kw ? `${pr.capacity_kw} kW` : "—"} />

@@ -1,6 +1,6 @@
 # Topline Solar CRM
 
-Web app for Topline Solar (rooftop solar EPC, North Bihar). Step 1: leads, follow-ups, roles, referral partners. Step 2: customers, projects, documents, subsidy and loan. Step 3: price list, quotations with branded PDF proposals, money in and out, dues, office expenses and referral commissions (company totals, spend and profit are owner-only and computed in the database). PDF fonts in `public/pdf` are Inter (SIL Open Font License).
+Web app for Topline Solar (rooftop solar EPC, North Bihar). Step 1: leads, follow-ups, roles, referral partners. Step 2: customers, projects, documents, subsidy and loan. Step 3: price list, quotations with branded PDF proposals, money in and out, dues, office expenses and referral commissions (company totals, spend and profit are owner-only and computed in the database). Step 4: owner dashboard, Excel reports with one-click export, and tasks. PDF fonts in `public/pdf` are Inter (SIL Open Font License).
 
 - **Frontend:** React + Vite + Tailwind (brand tokens in `tailwind.config.js`), mobile-first.
 - **Backend:** Supabase (Postgres with row-level security, Auth, one Edge Function).
