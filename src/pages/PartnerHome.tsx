@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, LogOut, Users } from "lucide-react";
+import { Plus, LogOut, Users, Wallet } from "lucide-react";
+import { useCommissions } from "../lib/money";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { fmtDate, rupees } from "../lib/format";
@@ -28,6 +29,9 @@ export default function PartnerHome() {
     enabled: !!profile?.partner_id,
   });
   const won = rows?.filter((r) => r.is_won).length ?? 0;
+  const { data: commissions } = useCommissions();
+  const earned = (commissions ?? []).reduce((a, c) => a + Number(c.amount), 0);
+  const paid = (commissions ?? []).reduce((a, c) => a + Number(c.paid), 0);
 
   return (
     <div className="min-h-dvh">
@@ -47,6 +51,24 @@ export default function PartnerHome() {
       </header>
       <main className="mx-auto -mt-4 max-w-3xl px-4 pb-24">
         <Button size="lg" className="mb-4 w-full shadow-pop" onClick={() => setOpen(true)}><Plus className="h-5 w-5" />Refer a new customer</Button>
+        <div className="card mb-4 p-4">
+          <div className="mb-3 flex items-center gap-2"><Wallet className="h-5 w-5 text-orange" /><h2 className="font-bold">Your commission</h2></div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl bg-cloud py-2.5"><p className="text-lg font-extrabold tabular-nums text-ink">{rupees(earned)}</p><p className="text-xs text-muted">Earned</p></div>
+            <div className="rounded-xl bg-success-tint py-2.5"><p className="text-lg font-extrabold tabular-nums text-success">{rupees(paid)}</p><p className="text-xs text-muted">Paid to you</p></div>
+            <div className="rounded-xl bg-orange-tint py-2.5"><p className="text-lg font-extrabold tabular-nums text-orange-dark">{rupees(Math.max(earned - paid, 0))}</p><p className="text-xs text-muted">Pending</p></div>
+          </div>
+          {commissions?.length ? (
+            <ul className="mt-3 divide-y divide-rule/70 text-sm">
+              {commissions.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0"><span className="block truncate font-medium text-ink">{c.customer_name}</span><span className="block text-xs text-muted">{c.basis} · {fmtDate(c.earned_at)}</span></span>
+                  <span className={cx("chip shrink-0", c.pending > 0 ? "bg-orange-tint text-orange-dark" : "bg-success-tint text-success")}>{c.pending > 0 ? `${rupees(c.pending)} pending` : `${rupees(c.amount)} paid`}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="mt-3 text-sm text-muted">Commission is earned when your customer's solar system is installed and connected to the grid.</p>}
+        </div>
         <div className="card">
           <h2 className="border-b border-rule px-4 py-3 font-bold">Your referrals</h2>
           {isLoading ? <PageLoader /> : !rows?.length ? <Empty icon={<Users className="h-6 w-6" />} title="No referrals yet" text="Refer someone who wants rooftop solar. You'll see their progress here." /> : (

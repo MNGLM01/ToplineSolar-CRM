@@ -12,6 +12,12 @@ import Projects from "./pages/Projects";
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const SiteSurvey = lazy(() => import("./pages/SiteSurvey"));
 const PendingDocuments = lazy(() => import("./pages/PendingDocuments"));
+const Quotes = lazy(() => import("./pages/Quotes"));
+const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
+const Money = lazy(() => import("./pages/Money"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 
 const Partners = lazy(() => import("./pages/Partners"));
 const Users = lazy(() => import("./pages/Users"));
@@ -21,11 +27,12 @@ const Import = lazy(() => import("./pages/Import"));
 const PartnerHome = lazy(() => import("./pages/PartnerHome"));
 
 export default function App() {
-  const { session, profile, loading, signOut } = useAuth();
+  const { session, profile, loading, profileChecked, signOut } = useAuth();
   if (loading) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
   if (!session) return <Login />;
-  if (!profile) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
-  if (!profile.active)
+  if (!profile && !profileChecked) return <div className="flex min-h-dvh items-center justify-center"><PageLoader /></div>;
+  // an inactive or half-created account can't read its own profile: say so instead of loading forever
+  if (!profile || !profile.active)
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
         <img src="/brand/topline-solar-logo-horizontal.svg" alt="Topline Solar" className="h-10" />
@@ -50,6 +57,12 @@ export default function App() {
               <Route path="followups" element={<Followups />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:id" element={<ProjectDetail />} />
+              <Route path="quotes" element={<Quotes />} />
+              <Route path="quotes/:id" element={<QuoteDetail />} />
+              <Route path="tasks" element={<Tasks />} />
+              {p.assignLeads && <Route path="dashboard" element={<Dashboard />} />}
+              {p.assignLeads && <Route path="reports" element={<Reports />} />}
+              {p.assignLeads && <Route path="money" element={<Money />} />}
               {p.assignLeads && <Route path="documents" element={<PendingDocuments />} />}
               {p.managePartners && <Route path="partners" element={<Partners />} />}
               {p.importLeads && <Route path="import" element={<Import />} />}

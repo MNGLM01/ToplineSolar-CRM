@@ -7,6 +7,8 @@ interface AuthState {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  /** true once we've asked the database for this user's profile (it may still be null) */
+  profileChecked: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -16,11 +18,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileChecked, setProfileChecked] = useState(false);
 
   async function loadProfile(s: Session | null) {
-    if (!s) { setProfile(null); return; }
+    if (!s) { setProfile(null); setProfileChecked(false); return; }
     const { data } = await supabase.from("profiles").select("*").eq("id", s.user.id).maybeSingle();
     setProfile((data as Profile) ?? null);
+    setProfileChecked(true);
   }
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      session, profile, loading,
+      session, profile, loading, profileChecked,
       refresh: () => loadProfile(session),
       signOut: async () => { await supabase.auth.signOut(); setProfile(null); },
     }}>

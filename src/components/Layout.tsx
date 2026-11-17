@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X, FolderKanban, FileCheck2 } from "lucide-react";
+import { Home, Users, CalendarClock, Handshake, UserCog, Settings, LogOut, Plus, Menu, Upload, Trash2, X, FolderKanban, FileCheck2, FileText, Wallet, LayoutDashboard, FileSpreadsheet, ListChecks } from "lucide-react";
 import { can, useAuth } from "../lib/auth";
 import { ROLE_LABEL } from "../lib/types";
 import { Avatar, cx } from "./ui";
@@ -13,14 +13,23 @@ export function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const nav = useNavigate();
 
-  const main = [
+  const main: { to: string; label: string; icon: typeof Home; end?: boolean }[] = [
     { to: "/", label: "Today", icon: Home, end: true },
     { to: "/leads", label: "Leads", icon: Users },
     { to: "/projects", label: "Projects", icon: FolderKanban },
     { to: "/followups", label: "Follow-ups", icon: CalendarClock },
+    { to: "/tasks", label: "Tasks", icon: ListChecks },
+    { to: "/quotes", label: "Quotations", icon: FileText },
+    ...(p.assignLeads ? [{ to: "/money", label: "Money", icon: Wallet }] : []),
+    ...(p.assignLeads ? [{ to: "/dashboard", label: "Dashboard", icon: LayoutDashboard }, { to: "/reports", label: "Reports", icon: FileSpreadsheet }] : []),
   ];
   const more = [
+    p.assignLeads && { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobileOnly: true },
     { to: "/followups", label: "Follow-ups", icon: CalendarClock, mobileOnly: true },
+    { to: "/tasks", label: "Tasks", icon: ListChecks, mobileOnly: true },
+    p.assignLeads && { to: "/money", label: "Money", icon: Wallet, mobileOnly: true },
+    { to: "/quotes", label: "Quotations", icon: FileText, mobileOnly: true },
+    p.assignLeads && { to: "/reports", label: "Reports", icon: FileSpreadsheet, mobileOnly: true },
     p.assignLeads && { to: "/documents", label: "Documents to check", icon: FileCheck2 },
     p.managePartners && { to: "/partners", label: "Referral partners", icon: Handshake },
     p.importLeads && { to: "/import", label: "Import from Excel", icon: Upload },
@@ -30,23 +39,24 @@ export function Layout() {
   ].filter(Boolean) as { to: string; label: string; icon: typeof Home; mobileOnly?: boolean }[];
 
   const link = ({ isActive }: { isActive: boolean }) =>
-    cx("flex items-center gap-3 rounded-xl px-3 h-11 text-[15px] font-medium transition",
+    cx("flex shrink-0 items-center gap-3 rounded-xl px-3 h-10 text-[15px] font-medium transition",
       isActive ? "bg-white/10 text-white" : "text-white/65 hover:text-white hover:bg-white/5");
 
   return (
     <div className="min-h-dvh lg:pl-64">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-navy px-4 py-5 lg:flex">
-        <img src="/brand/topline-solar-logo-horizontal-dark.svg" alt="Topline Solar" className="mb-7 h-9 w-auto self-start px-2" />
-        <button onClick={() => setNewOpen(true)} className="mb-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-orange font-semibold text-white transition hover:bg-orange-dark">
+        <img src="/brand/topline-solar-logo-horizontal-dark.svg" alt="Topline Solar" className="mb-6 h-9 w-auto shrink-0 self-start px-2" />
+        <button onClick={() => setNewOpen(true)} className="mb-4 flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange font-semibold text-white transition hover:bg-orange-dark">
           <Plus className="h-5 w-5" /> New lead
         </button>
-        <nav className="flex flex-col gap-1">
-          {main.map((i) => <NavLink key={i.to} to={i.to} end={i.end} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
-          {more.some((i) => !i.mobileOnly) && <div className="mx-3 my-3 h-px bg-white/10" />}
+        {/* scrolls on short screens so the account row never covers the menu */}
+        <nav className="-mx-2 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-2">
+          {[main[0], ...main.filter((i) => i.to === "/dashboard"), ...main.slice(1).filter((i) => i.to !== "/dashboard")].map((i) => <NavLink key={i.to} to={i.to} end={i.end} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
+          {more.some((i) => !i.mobileOnly) && <div className="mx-3 my-2.5 h-px shrink-0 bg-white/10" />}
           {more.filter((i) => !i.mobileOnly).map((i) => <NavLink key={i.to} to={i.to} className={link}><i.icon className="h-5 w-5" />{i.label}</NavLink>)}
         </nav>
-        <div className="mt-auto flex items-center gap-3 rounded-xl px-2 py-2">
+        <div className="flex shrink-0 items-center gap-3 border-t border-white/10 px-2 pt-3">
           {profile && <Avatar name={profile.full_name} size={34} />}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-white">{profile?.full_name}</p>
